@@ -15,7 +15,24 @@ from celery_app import send_mock_email
 router = APIRouter(prefix="/notes", tags=["Notes"])
 
 # POST /notes
-@router.post("/", response_model=schemas.NoteOut)
+@router.post(
+    "/",
+    response_model=schemas.NoteOut,
+    summary="Жаңа ескертпе қосу",
+    description="Аутентификацияланған қолданушы үшін жаңа ескертпе жасайды.",
+    responses={
+        201: {
+            "description": "Ескертпе сәтті жасалды",
+            "content": {
+                "application/json": {
+                    "example": {"id": 1, "text": "Сабаққа дайындалу", "created_at": "2024-05-01T12:00:00Z"}
+                }
+            }
+        },
+        401: {"description": "Авторизация қажет"},
+        422: {"description": "Валидация қатесі"}
+    },
+)
 async def create_note(
     note: schemas.NoteCreate,
     db: AsyncSession = Depends(get_db),
@@ -35,7 +52,26 @@ async def create_note(
     return new_note
 
 # GET /notes
-@router.get("/", response_model=list[schemas.NoteOut])
+@router.get(
+    "/",
+    response_model=list[schemas.NoteOut],
+    summary="Барлық ескертпелерді алу",
+    description="Аутентификацияланған қолданушының барлық ескертпелерін қайтарады (кэш қолданылады).",
+    responses={
+        200: {
+            "description": "Ескертпелер тізімі сәтті қайтарылды",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {"id": 1, "text": "Сабаққа дайындалу", "created_at": "2024-05-01T12:00:00Z"},
+                        {"id": 2, "text": "Жаттығу жасау", "created_at": "2024-05-02T09:00:00Z"}
+                    ]
+                }
+            }
+        },
+        401: {"description": "Авторизация қажет"}
+    },
+)
 async def get_notes(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -58,7 +94,24 @@ async def get_notes(
     return serialized
 
 # GET /notes/{note_id}
-@router.get("/{note_id}", response_model=schemas.NoteOut)
+@router.get(
+    "/{note_id}",
+    response_model=schemas.NoteOut,
+    summary="Ескертпені алу (ID арқылы)",
+    description="ID арқылы нақты ескертпені қайтарады. Тек иесі ғана көре алады.",
+    responses={
+        200: {
+            "description": "Ескертпе сәтті қайтарылды",
+            "content": {
+                "application/json": {
+                    "example": {"id": 1, "text": "Сабаққа дайындалу", "created_at": "2024-05-01T12:00:00Z"}
+                }
+            }
+        },
+        401: {"description": "Авторизация қажет"},
+        404: {"description": "Ескертпе табылмады"}
+    },
+)
 async def get_note(
     note_id: int,
     db: AsyncSession = Depends(get_db),
@@ -71,7 +124,25 @@ async def get_note(
     return note
 
 # PUT /notes/{note_id}
-@router.put("/{note_id}", response_model=schemas.NoteOut)
+@router.put(
+    "/{note_id}",
+    response_model=schemas.NoteOut,
+    summary="Ескертпені жаңарту",
+    description="ID арқылы ескертпені жаңартады. Тек иесі ғана өзгерте алады.",
+    responses={
+        200: {
+            "description": "Ескертпе сәтті жаңартылды",
+            "content": {
+                "application/json": {
+                    "example": {"id": 1, "text": "Жаңартылған мәтін", "created_at": "2024-05-01T12:00:00Z"}
+                }
+            }
+        },
+        401: {"description": "Авторизация қажет"},
+        404: {"description": "Ескертпе табылмады"},
+        422: {"description": "Валидация қатесі"}
+    },
+)
 async def update_note(
     note_id: int,
     updated_note: schemas.NoteUpdate,
@@ -99,7 +170,23 @@ async def update_note(
     return note
 
 # DELETE /notes/{note_id}
-@router.delete("/{note_id}")
+@router.delete(
+    "/{note_id}",
+    summary="Ескертпені жою",
+    description="ID арқылы ескертпені жояды. Тек иесі ғана өшіре алады.",
+    responses={
+        200: {
+            "description": "Ескертпе сәтті жойылды",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Note deleted successfully"}
+                }
+            }
+        },
+        401: {"description": "Авторизация қажет"},
+        404: {"description": "Ескертпе табылмады"}
+    },
+)
 async def delete_note(
     note_id: int,
     db: AsyncSession = Depends(get_db),

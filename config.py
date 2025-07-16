@@ -1,20 +1,14 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
+from pydantic import Field
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="allow")  # Немесе extra="ignore" болса да болады
+    rate_limit: int = Field(default=100, alias="RATE_LIMIT")
+    rate_limit_window: int = Field(default=60, alias="RATE_LIMIT_WINDOW")
+    # қалғандарын қалдыра бер
 
-    # PostgreSQL
-    database_url: str
-
-    # Redis
-    redis_host: str = "localhost"
-    redis_port: int = 6379
-
-    # FastAPI
-    secret_key: str
-
-    # Celery
-    celery_broker_url: str
-    celery_result_backend: str
+    model_config = {
+        "env_file": ".env",
+        "extra": "allow"
+    }
 
 settings = Settings()

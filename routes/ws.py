@@ -1,6 +1,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-router = APIRouter()
+router = APIRouter(tags=["WebSocket"])
 
 class ConnectionManager:
     def __init__(self):
@@ -19,8 +19,15 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-@router.websocket("/ws")
+@router.websocket(
+    "/ws",
+    name="WebSocket байланысы",
+)
 async def websocket_endpoint(websocket: WebSocket):
+    """
+    summary: Клиенттерге хабарламаларды нақты уақытта таратуға арналған WebSocket байланысы.
+    description: Бұл WebSocket эндпоинты клиенттерге нақты уақытта хабарламаларды таратуға мүмкіндік береді. Әрбір қосылған клиент хабарлама жібере алады және барлық клиенттерге таратылады.
+    """
     await manager.connect(websocket)
     try:
         while True:
