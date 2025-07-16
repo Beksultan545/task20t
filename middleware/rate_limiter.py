@@ -1,5 +1,6 @@
 from starlette.middleware.base import BaseHTTPMiddleware
-from fastapi import Request, HTTPException
+from starlette.responses import JSONResponse
+from fastapi import Request
 from redis import asyncio as aioredis
 from config import settings
 
@@ -16,6 +17,11 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         try:
             client_ip = request.client.host or "unknown"
             path = request.url.path
+
+            # /metrics секілді жүйелік URL-дардан шығамыз
+            if path.startswith("/metrics"):
+                return await call_next(request)
+
             key = f"ratelimit:{client_ip}:{path}"
             ttl = settings.rate_limit_window
             limit = settings.rate_limit
@@ -25,15 +31,13 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
                 await self.redis.expire(key, ttl)
 
             if current > limit:
-                raise HTTPException(
+                return JSONResponse(
                     status_code=429,
-                    detail="Сұраныс шегі асқан. Кейінірек қайталап көріңіз."
+                    content={"detail": "Сұраныс шегі асқан. Кейінірек қайталап көріңіз."}
                 )
 
-        except HTTPException:
-            raise  # лимит асса, тікелей көтереміз
-
         except Exception as e:
-            print(f"[RateLimiter] Redis error: {e}")  # қосымша лог
+            print(f"[RateLimiter] Redis error: {e}")
+            # Redis істемей қалса, бәрібір сұранысты өткіземіз
 
         return await call_next(request)
