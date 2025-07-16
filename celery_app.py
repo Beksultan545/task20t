@@ -12,6 +12,5 @@ celery_app.conf.timezone = "Asia/Almaty"
 
 @celery_app.task
 def send_mock_email(email: str):
-    print(f"📨 Sending email to {email}...")
-    time.sleep(2)
+    time.sleep(10)
     print(f"✅ Email sent to {email}")
