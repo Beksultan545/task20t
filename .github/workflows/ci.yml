@@ -12,7 +12,8 @@ jobs:
     services:
       postgres:
         image: postgres:latest
-        ports: ["5432:5432"]
+        ports:
+          - 5432:5432
         env:
           POSTGRES_USER: beksultan
           POSTGRES_PASSWORD: admin
@@ -25,7 +26,8 @@ jobs:
 
       redis:
         image: redis:7
-        ports: ["6379:6379"]
+        ports:
+          - 6379:6379
 
     steps:
       - name: 🔄 Checkout code
@@ -38,18 +40,19 @@ jobs:
 
       - name: 📦 Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest
 
       - name: 🧪 Run tests
         env:
-          DATABASE_URL: postgresql+asyncpg://beksultan:admin@localhost/mydb
+          DATABASE_URL: postgresql+asyncpg://beksultan:admin@127.0.0.1:5432/mydb
           SECRET_KEY: supersecret
-          CELERY_BROKER_URL: redis://localhost:6379/0
-          CELERY_RESULT_BACKEND: redis://localhost:6379/0
+          CELERY_BROKER_URL: redis://127.0.0.1:6379/0
+          CELERY_RESULT_BACKEND: redis://127.0.0.1:6379/0
         run: |
           pytest
 
       - name: 🐳 Build Docker image
         run: |
-          docker build . -t myapp:latest
+          docker build -t myapp:latest .

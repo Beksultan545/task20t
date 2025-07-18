@@ -3,6 +3,9 @@ from starlette.responses import JSONResponse
 from fastapi import Request
 from redis import asyncio as aioredis
 from config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 class RateLimiterMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
@@ -15,20 +18,20 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         try:
-            client_ip = request.client.host or "unknown"
             path = request.url.path
+            client_ip = request.client.host or "unknown"
 
-            # /metrics секілді жүйелік URL-дардан шығамыз
-            if path.startswith("/metrics"):
+            # /metrics және /health секілді жүйелік жолдар үшін шектеу қолданылмайды
+            if path.startswith("/metrics") or path.startswith("/health"):
                 return await call_next(request)
 
             key = f"ratelimit:{client_ip}:{path}"
-            ttl = settings.rate_limit_window
-            limit = settings.rate_limit
+            limit = settings.rate_limit             # мыс: 10
+            window = settings.rate_limit_window     # мыс: 60 секунд
 
             current = await self.redis.incr(key)
             if current == 1:
-                await self.redis.expire(key, ttl)
+                await self.redis.expire(key, window)
 
             if current > limit:
                 return JSONResponse(
@@ -37,7 +40,7 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
                 )
 
         except Exception as e:
-            print(f"[RateLimiter] Redis error: {e}")
-            # Redis істемей қалса, бәрібір сұранысты өткіземіз
+            logger.warning(f"[RateLimiter] Redis қате: {e}")
+            # Redis істемесе, қолданушыны бұғаттамаймыз
 
         return await call_next(request)
